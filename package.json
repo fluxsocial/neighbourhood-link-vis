@@ -8,7 +8,11 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@apollo/client": "3.3.20",
+    "@perspect3vism/ad4m": "^0.1.21",
     "core-js": "^3.6.5",
+    "main": "^1000.0.1",
+    "subscriptions-transport-ws": "^0.11.0",
     "vis-data": "^7.1.2",
     "vis-network": "^9.1.0",
     "vis-util": "^5.0.2",

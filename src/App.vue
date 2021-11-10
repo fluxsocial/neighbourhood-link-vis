@@ -1,6 +1,7 @@
 <template>
 <div id="app" >
   <h1>Ad4m Neighbourhood Link Viz</h1>
+  <button @click="load">Load</button>
   <network ref="network" class="wrapper" 
   :nodes="nodes"
   :edges="edges"
@@ -11,30 +12,31 @@
 
 <script>
 import "vue-vis-network/node_modules/vis-network/dist/vis-network.css";
+import { ad4mClient } from "./main";
 
 export default {
   name: 'App',
+  methods: {
+    async load() {
+      this.nodes = await this.getNodes();
+    },
+    async getNodes() {
+      console.log("getNodes()");
+      const perspectives = await ad4mClient.perspective.all();
+      console.log(perspectives);
+      return perspectives.map((perspective) => {
+        console.log(perspective);
+        return {
+          id: perspective.uuid,
+          label: perspective.name,
+        }
+      })
+    }
+  },
   data() {
     return {
-      nodes: [
-        {id: 1,  label: 'circle'},
-        {id: 2,  label: 'ellipse'},
-        {id: 3,  label: 'database'},
-        {id: 4,  label: 'box'},
-        {id: 5,  label: 'diamond'},
-        {id: 6,  label: 'dot'},
-        {id: 7,  label: 'square'},
-        {id: 8,  label: 'triangle'},
-      ],
-      edges: [
-        {from: 1, to: 2},
-        {from: 2, to: 3},
-        {from: 2, to: 4},
-        {from: 2, to: 5}, 
-        {from: 5, to: 6},
-        {from: 5, to: 7},
-        {from: 6, to: 8}
-      ],
+      nodes: [],
+      edges: [],
       options: {
          nodes: {
           borderWidth: 4
