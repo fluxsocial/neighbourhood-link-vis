@@ -68,32 +68,32 @@ export default {
       //Add the meta links to the network
       for (const metaLink of neighbourhoodMetaLinks) {
         const link = metaLink.data;
-        let edge = {}
-        //Use unique edges here
-        const id = uuidv4();
-        //If source self then use from as perspective
-        if (link.source == "self") {
-          edge = {
-            from: metaLinkNode,
-            to: id,
-            label: link.predicate
-          } 
-        } else {
-          edge = {
-            from: link.source,
-            to: link.target,
-            label: link.predicate
-          }
-        }
+        const sourceId = uuidv4();
+        this.nodes.push({
+          id: sourceId,
+          label: link.source,
+          widthConstraint: 100,
+          group: "metaLinks"
+        })
+        this.edges.push({
+          from: metaLinkNode,
+          to: sourceId,
+          label: "containsLink"
+        })
         //Add a node for target data
         //We always add a node here since we dont want perspectives to share link targets
+        const targetId = uuidv4();
         this.nodes.push({
-          id: id,
+          id: targetId,
           label: link.target,
           widthConstraint: 100,
           group: "metaLinks"
         })
-        this.edges.push(edge)
+        this.edges.push({
+          from: sourceId,
+          to: targetId,
+          label: link.predicate
+        })
       }
     },
     async loadLinkLanguageLinks(perspective, isNeighbourhood) {
