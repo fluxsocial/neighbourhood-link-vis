@@ -8,6 +8,10 @@ Resulting graphs should look something like the following:
 
 ![Diagram](/assets/neighbourhood-viz.png)
 
+## Live Version
+
+You can try a hosted version of this tool here: https://hardcore-dubinsky-432687.netlify.app/. Note that this of course requires a local running  ad4m-executor installation.
+
 ## Project setup
 ```
 npm install
