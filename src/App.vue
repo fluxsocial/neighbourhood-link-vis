@@ -31,11 +31,11 @@ export default {
       };
       this.nodes.push(perspectiveNode);
     },
-    loadNeighbourhoodNodes(perspective) {
+    loadNeighbourhoodNode(perspective) {
       const neighbourhoodLanguage = perspective.neighbourhood.linkLanguage;
       //Create perspective node
       const perspectiveNode = {
-        id: perspective.uuid,
+        id: perspective.sharedUrl,
         label: perspective.name + "-Neighbourhood",
         widthConstraint: 100,
         shape: 'database',
@@ -47,7 +47,7 @@ export default {
         label: neighbourhoodLanguage,
         widthConstraint: 100
       }
-      this.nodes.push(perspectiveNode);
+      if (this.nodes.filter(node => node.id === perspective.sharedUrl).length == 0) this.nodes.push(perspectiveNode);
       this.nodes.push(neighbourhoodLanugageNode);
     },
     loadMetaLinks(perspective) {
@@ -61,7 +61,7 @@ export default {
       }
       this.nodes.push(metaLinks);
       this.edges.push({
-        from: perspective.uuid,
+        from: perspective.sharedUrl,
         to: metaLinkNode,
         label: "metaLinks"
       })
@@ -108,7 +108,7 @@ export default {
         }
         this.nodes.push(linkLanguageLinks);
         this.edges.push({
-          from: perspective.uuid,
+          from: perspective.sharedUrl,
           to: linkLanguageLinksNode,
           label: "linkLanguageLinks"
         })
@@ -137,11 +137,32 @@ export default {
           widthConstraint: 200,
           group: "linkLanguageLink"
         }
-        const targetNode = {
-          id: targetId,
-          label: linkData.target,
-          widthConstraint: 200,
-          group: "linkLanguageLink"
+        let targetNode;
+        let edge;
+        if (linkData.target.includes("neighbourhood://")) {
+          targetNode = {
+            id: linkData.target,
+            label: linkData.target,
+            widthConstraint: 200,
+            group: "linkLanguageLink"
+          }
+          edge = {
+            from: sourceId,
+            to: linkData.target,
+            label: linkData.predicate,
+          }
+        } else {
+          targetNode = {
+            id: targetId,
+            label: linkData.target,
+            widthConstraint: 200,
+            group: "linkLanguageLink"
+          }
+          edge = {
+            from: sourceId,
+            to: targetId,
+            label: linkData.predicate,
+          }
         }
         this.nodes.push(sourceNode)
         this.nodes.push(targetNode)
@@ -150,11 +171,7 @@ export default {
           to: sourceId,
           label: "containsLink"
         })
-        this.edges.push({
-          from: sourceId,
-          to: targetId,
-          label: linkData.predicate,
-        })
+        this.edges.push(edge)
       }
     },
     async getPerspectiveNodesAndMetaEdges() {
@@ -164,7 +181,7 @@ export default {
       for (const perspective of perspectives) {
         if (perspective.neighbourhood) {
           //Load the neighbourhood data
-          this.loadNeighbourhoodNodes(perspective);
+          this.loadNeighbourhoodNode(perspective);
           //Load the meta data
           this.loadMetaLinks(perspective);
 
