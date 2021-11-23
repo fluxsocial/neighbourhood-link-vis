@@ -1,6 +1,7 @@
 <template>
 <div id="app" >
   <h1>Ad4m Neighbourhood Link Viz</h1>
+  <h4>Please ensure your ad4m agent is unlocked before loading. This application also expects ad4m graphql endpoint to be available at: ws://localhost:4000/graphql</h4>
   <button @click="load">Load</button>
   <network ref="network" class="wrapper" 
   :nodes="nodes"
