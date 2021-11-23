@@ -26,7 +26,7 @@ export default {
       const perspectiveNode = {
         id: perspective.uuid,
         label: perspective.name + "-Perspective",
-        widthConstraint: 100,
+        widthConstraint: 150,
         shape: 'database'
       };
       this.nodes.push(perspectiveNode);
@@ -57,7 +57,8 @@ export default {
         id: metaLinkNode,
         label: "metaLinks",
         shape: 'database',
-        group: "metaLinks"
+        group: "metaLinks",
+        widthConstraint: 100
       }
       this.nodes.push(metaLinks);
       this.edges.push({
@@ -104,7 +105,8 @@ export default {
           id: linkLanguageLinksNode,
           label: "linkLanguageLinks",
           shape: 'database',
-          group: "linkLanguageLink"
+          group: "linkLanguageLink",
+          widthConstraint: 100
         }
         this.nodes.push(linkLanguageLinks);
         this.edges.push({
