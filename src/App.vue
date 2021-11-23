@@ -20,9 +20,7 @@ export default {
   name: 'App',
   methods: {
     async load() {
-      const [nodes, edges] = await this.getPerspectiveNodesAndMetaEdges();
-      this.nodes = nodes;
-      this.edges = edges;
+      await this.getPerspectiveNodesAndMetaEdges();
     },
     loadPerspectiveNode(perspective) {
       const perspectiveNode = {
@@ -31,10 +29,9 @@ export default {
         widthConstraint: 100,
         shape: 'database'
       };
-      return perspectiveNode;
+      this.nodes.push(perspectiveNode);
     },
     loadNeighbourhoodNodes(perspective) {
-      const nodes = [];
       const neighbourhoodLanguage = perspective.neighbourhood.linkLanguage;
       //Create perspective node
       const perspectiveNode = {
@@ -50,14 +47,11 @@ export default {
         label: neighbourhoodLanguage,
         widthConstraint: 100
       }
-      nodes.push(perspectiveNode);
-      nodes.push(neighbourhoodLanugageNode);
-      return [nodes, [{type: "perspective", id: perspective.uuid}, {type: "linkLanguage", id: neighbourhoodLanguage}]]
+      this.nodes.push(perspectiveNode);
+      this.nodes.push(neighbourhoodLanugageNode);
     },
     loadMetaLinks(perspective) {
       const neighbourhoodMetaLinks = perspective.neighbourhood.meta.links;
-      const nodes = [];
-      const edges = [];
       const metaLinkNode = uuidv4();
       const metaLinks = {
         id: metaLinkNode,
@@ -65,8 +59,8 @@ export default {
         shape: 'database',
         group: "metaLinks"
       }
-      nodes.push(metaLinks);
-      edges.push({
+      this.nodes.push(metaLinks);
+      this.edges.push({
         from: perspective.uuid,
         to: metaLinkNode,
         label: "metaLinks"
@@ -93,20 +87,16 @@ export default {
         }
         //Add a node for target data
         //We always add a node here since we dont want perspectives to share link targets
-        nodes.push({
+        this.nodes.push({
           id: id,
           label: link.target,
           widthConstraint: 100,
           group: "metaLinks"
         })
-        edges.push(edge)
+        this.edges.push(edge)
       }
-
-      return [nodes, edges, [{type: "metaLinksDatabase", id: metaLinkNode}]]
     },
     async loadLinkLanguageLinks(perspective, isNeighbourhood) {
-      const nodes = [];
-      const edges = [];
       //Now start to look for the actual links on the link language
       const linkLanguageLinksNode = uuidv4(); 
       if (isNeighbourhood) {
@@ -116,13 +106,13 @@ export default {
           shape: 'database',
           group: "linkLanguageLink"
         }
-        nodes.push(linkLanguageLinks);
-        edges.push({
+        this.nodes.push(linkLanguageLinks);
+        this.edges.push({
           from: perspective.uuid,
           to: linkLanguageLinksNode,
           label: "linkLanguageLinks"
         })
-        edges.push({
+        this.edges.push({
           from: linkLanguageLinksNode,
           to: perspective.neighbourhood.linkLanguage,
           label: "usesLanguage"
@@ -152,53 +142,39 @@ export default {
           widthConstraint: 200,
           group: "linkLanguageLink"
         }
-        if (nodes.filter(node => node.id === linkData.source).length == 0) { nodes.push(sourceNode) }
-        if (nodes.filter(node => node.id === linkData.target).length == 0) { nodes.push(targetNode) }
-        edges.push({
+        if (this.nodes.filter(node => node.id === linkData.source).length == 0) { this.nodes.push(sourceNode) }
+        if (this.nodes.filter(node => node.id === linkData.target).length == 0) { this.nodes.push(targetNode) }
+        this.edges.push({
           from: from,
           to: linkData.source,
           label: "containsLink"
         })
-        edges.push({
+        this.edges.push({
           from: linkData.source,
           to: linkData.target,
           label: linkData.predicate,
         })
       }
-      return [nodes, edges]
     },
     async getPerspectiveNodesAndMetaEdges() {
       console.log("getPerspectiveNodesAndMetaEdges()");
       const perspectives = await ad4mClient.perspective.all();
       console.log("Got perspectives: ", perspectives);
-      let nodes = [];
-      let edges = [];
       for (const perspective of perspectives) {
         if (perspective.neighbourhood) {
           //Load the neighbourhood data
-          const [neighbourhoodNodes, nodeRefs] = this.loadNeighbourhoodNodes(perspective);
+          this.loadNeighbourhoodNodes(perspective);
           //Load the meta data
-          const [metaNodes, neighbourhoodEdges, metaNodeRefs] = this.loadMetaLinks(perspective);
-          //Add nodes and edges to output
-          nodes = nodes.concat(neighbourhoodNodes);
-          nodes = nodes.concat(metaNodes);
-          edges = edges.concat(neighbourhoodEdges);
-          //Keep one array of node refs we might need later
-          nodeRefs.concat(metaNodeRefs);
+          this.loadMetaLinks(perspective);
 
-          const [linkNodes, linkEdges] = await this.loadLinkLanguageLinks(perspective, true);
-          nodes = nodes.concat(linkNodes);
-          edges = edges.concat(linkEdges);
+          await this.loadLinkLanguageLinks(perspective, true);
         } else {
-          const perspectiveNode = this.loadPerspectiveNode(perspective);
-          nodes.push(perspectiveNode);
-          const [linkNodes, linkEdges] = await this.loadLinkLanguageLinks(perspective, false);
-          nodes = nodes.concat(linkNodes);
-          edges = edges.concat(linkEdges);
+          this.loadPerspectiveNode(perspective);
+          await this.loadLinkLanguageLinks(perspective, false);
         }
       }
-      edges = edges.sort(() => Math.random() - 0.5);
-      nodes = nodes.sort(() => Math.random() - 0.5);
+      this.edges = this.edges.sort(() => Math.random() - 0.5);
+      this.nodes = this.nodes.sort(() => Math.random() - 0.5);
 
       Number.prototype.pad = function(size) {
 
@@ -207,31 +183,30 @@ export default {
           return s;
       }
 
-      var padsize = nodes.length.toString().length;
+      var padsize = this.nodes.length.toString().length;
 
-      nodes.forEach ( node => {
+      this.nodes.forEach ( node => {
 
-        node.key = nodes.indexOf(node).pad(padsize);
+        node.key = this.nodes.indexOf(node).pad(padsize);
 
-        var edge = edges.find(e => e.to == node.id);
+        var edge = this.edges.find(e => e.to == node.id);
         while (edge) {
 
-          var parent = nodes.find(n => n.id == edge.from);
+          var parent = this.nodes.find(n => n.id == edge.from);
           if (parent) {
 
-              node.key = "" + nodes.indexOf(parent).pad(padsize) + node.key;
+              node.key = "" + this.nodes.indexOf(parent).pad(padsize) + node.key;
           }
 
-          edge = edges.find(e => e.to == parent.id);
+          edge = this.edges.find(e => e.to == parent.id);
         }
       });  
 
-      nodes = nodes.sort( (a,b) => {
+      this.nodes = this.nodes.sort( (a,b) => {
         if (a.key > b.key) return 1;
         if (a.key < b.key) return -1;
         return 0;
       });
-      return [nodes, edges]
     }
   },
   data() {
