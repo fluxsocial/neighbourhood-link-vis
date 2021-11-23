@@ -129,29 +129,30 @@ export default {
 
       for (const link of links) {
         const linkData = link.data;
-        console.log(linkData);
+        const sourceId = uuidv4();
+        const targetId = uuidv4();
         const sourceNode = {
-          id: linkData.source,
+          id: sourceId,
           label: linkData.source,
           widthConstraint: 200,
           group: "linkLanguageLink"
         }
         const targetNode = {
-          id: linkData.target,
+          id: targetId,
           label: linkData.target,
           widthConstraint: 200,
           group: "linkLanguageLink"
         }
-        if (this.nodes.filter(node => node.id === linkData.source).length == 0) { this.nodes.push(sourceNode) }
-        if (this.nodes.filter(node => node.id === linkData.target).length == 0) { this.nodes.push(targetNode) }
+        this.nodes.push(sourceNode)
+        this.nodes.push(targetNode)
         this.edges.push({
           from: from,
-          to: linkData.source,
+          to: sourceId,
           label: "containsLink"
         })
         this.edges.push({
-          from: linkData.source,
-          to: linkData.target,
+          from: sourceId,
+          to: targetId,
           label: linkData.predicate,
         })
       }
@@ -226,7 +227,6 @@ export default {
         },
         physics: {
           hierarchicalRepulsion: {
-            enabled: true,
             nodeDistance: 300,
             centralGravity: 0.0,
             springLength: 200,
