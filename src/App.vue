@@ -37,7 +37,7 @@ export default {
       const perspectiveNode = {
         id: perspective.sharedUrl,
         label: perspective.name + "-Neighbourhood",
-        widthConstraint: 100,
+        widthConstraint: 150,
         shape: 'database',
         color: "#FF0013"
       };
@@ -45,7 +45,7 @@ export default {
       const neighbourhoodLanugageNode = {
         id: neighbourhoodLanguage,
         label: neighbourhoodLanguage,
-        widthConstraint: 100
+        widthConstraint: 150
       }
       if (this.nodes.filter(node => node.id === perspective.sharedUrl).length == 0) this.nodes.push(perspectiveNode);
       this.nodes.push(neighbourhoodLanugageNode);
@@ -72,7 +72,7 @@ export default {
         this.nodes.push({
           id: sourceId,
           label: link.source,
-          widthConstraint: 100,
+          widthConstraint: 150,
           group: "metaLinks"
         })
         this.edges.push({
@@ -86,7 +86,7 @@ export default {
         this.nodes.push({
           id: targetId,
           label: link.target,
-          widthConstraint: 100,
+          widthConstraint: 150,
           group: "metaLinks"
         })
         this.edges.push({
@@ -134,7 +134,7 @@ export default {
         const sourceNode = {
           id: sourceId,
           label: linkData.source,
-          widthConstraint: 200,
+          widthConstraint: 150,
           group: "linkLanguageLink"
         }
         let targetNode;
@@ -143,8 +143,10 @@ export default {
           targetNode = {
             id: linkData.target,
             label: linkData.target,
-            widthConstraint: 200,
-            group: "linkLanguageLink"
+            widthConstraint: 150,
+            group: "linkLanguageLink",
+            shape: 'database',
+            color: '#FF0013'
           }
           edge = {
             from: sourceId,
@@ -155,7 +157,7 @@ export default {
           targetNode = {
             id: targetId,
             label: linkData.target,
-            widthConstraint: 200,
+            widthConstraint: 150,
             group: "linkLanguageLink"
           }
           edge = {
