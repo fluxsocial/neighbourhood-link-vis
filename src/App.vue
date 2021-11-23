@@ -40,7 +40,8 @@ export default {
         id: perspective.uuid,
         label: perspective.name + "-Neighbourhood",
         widthConstraint: 100,
-        shape: 'database'
+        shape: 'database',
+        color: "#FF0013"
       };
       //Create language node
       const neighbourhoodLanugageNode = {
@@ -60,7 +61,8 @@ export default {
       const metaLinks = {
         id: metaLinkNode,
         label: "metaLinks",
-        shape: 'database'
+        shape: 'database',
+        group: "metaLinks"
       }
       nodes.push(metaLinks);
       edges.push({
@@ -93,58 +95,73 @@ export default {
         nodes.push({
           id: id,
           label: link.target,
-          widthConstraint: 100
+          widthConstraint: 100,
+          group: "metaLinks"
         })
         edges.push(edge)
       }
 
       return [nodes, edges, [{type: "metaLinksDatabase", id: metaLinkNode}]]
     },
-    async loadLinkLanguageLinks(perspective) {
+    async loadLinkLanguageLinks(perspective, isNeighbourhood) {
       const nodes = [];
       const edges = [];
       //Now start to look for the actual links on the link language
-      const linkLanguageLinksNode = uuidv4();
-      const linkLanguageLinks = {
-        id: linkLanguageLinksNode,
-        label: "linkLanguageLinks",
-        shape: 'database'
+      const linkLanguageLinksNode = uuidv4(); 
+      if (isNeighbourhood) {
+        const linkLanguageLinks = {
+          id: linkLanguageLinksNode,
+          label: "linkLanguageLinks",
+          shape: 'database',
+          group: "linkLanguageLink"
+        }
+        nodes.push(linkLanguageLinks);
+        edges.push({
+          from: perspective.uuid,
+          to: linkLanguageLinksNode,
+          label: "linkLanguageLinks"
+        })
+        edges.push({
+          from: linkLanguageLinksNode,
+          to: perspective.neighbourhood.linkLanguage,
+          label: "usesLanguage"
+        })
       }
-      nodes.push(linkLanguageLinks);
-      edges.push({
-        from: perspective.uuid,
-        to: linkLanguageLinksNode,
-        label: "linkLanguageLinks"
-      })
-      edges.push({
-        from: linkLanguageLinksNode,
-        to: perspective.neighbourhood.linkLanguage,
-        label: "usesLanguage"
-      })
       const links = await ad4mClient.perspective.queryLinks(perspective.uuid, {limit: 10});
       
+      let from;
+      if (isNeighbourhood) {
+        from = linkLanguageLinksNode
+      } else {
+        from = perspective.uuid;
+      }
+
       for (const link of links) {
         const linkData = link.data;
         console.log(linkData);
         const sourceNode = {
           id: linkData.source,
           label: linkData.source,
+          widthConstraint: 200,
+          group: "linkLanguageLink"
         }
         const targetNode = {
           id: linkData.target,
-          label: linkData.target
+          label: linkData.target,
+          widthConstraint: 200,
+          group: "linkLanguageLink"
         }
         if (nodes.filter(node => node.id === linkData.source).length == 0) { nodes.push(sourceNode) }
         if (nodes.filter(node => node.id === linkData.target).length == 0) { nodes.push(targetNode) }
         edges.push({
-          from: linkLanguageLinksNode,
+          from: from,
           to: linkData.source,
           label: "containsLink"
         })
         edges.push({
           from: linkData.source,
           to: linkData.target,
-          label: linkData.predicate
+          label: linkData.predicate,
         })
       }
       return [nodes, edges]
@@ -168,14 +185,51 @@ export default {
           //Keep one array of node refs we might need later
           nodeRefs.concat(metaNodeRefs);
 
-          const [linkNodes, linkEdges] = await this.loadLinkLanguageLinks(perspective);
+          const [linkNodes, linkEdges] = await this.loadLinkLanguageLinks(perspective, true);
           nodes = nodes.concat(linkNodes);
           edges = edges.concat(linkEdges);
         } else {
           const perspectiveNode = this.loadPerspectiveNode(perspective);
           nodes.push(perspectiveNode);
+          const [linkNodes, linkEdges] = await this.loadLinkLanguageLinks(perspective, false);
+          nodes = nodes.concat(linkNodes);
+          edges = edges.concat(linkEdges);
         }
       }
+      edges = edges.sort(() => Math.random() - 0.5);
+      nodes = nodes.sort(() => Math.random() - 0.5);
+
+      Number.prototype.pad = function(size) {
+
+          var s = String(this);
+          while (s.length < (size || 2)) {s = "0" + s;}
+          return s;
+      }
+
+      var padsize = nodes.length.toString().length;
+
+      nodes.forEach ( node => {
+
+        node.key = nodes.indexOf(node).pad(padsize);
+
+        var edge = edges.find(e => e.to == node.id);
+        while (edge) {
+
+          var parent = nodes.find(n => n.id == edge.from);
+          if (parent) {
+
+              node.key = "" + nodes.indexOf(parent).pad(padsize) + node.key;
+          }
+
+          edge = edges.find(e => e.to == parent.id);
+        }
+      });  
+
+      nodes = nodes.sort( (a,b) => {
+        if (a.key > b.key) return 1;
+        if (a.key < b.key) return -1;
+        return 0;
+      });
       return [nodes, edges]
     }
   },
@@ -184,34 +238,38 @@ export default {
       nodes: [],
       edges: [],
       options: {
-        autoResize: true,
+        groups: {
+          linkLanguageLink: {color:{background:'#FF3366'}},
+          metaLinks: {color:{background:'#33A1FF'}}
+        },
         nodes: {
           borderWidth: 1
         },
         edges: {
-          color: 'grey'
+          color: 'black'
         },
         physics: {
-          barnesHut: {
-            springConstant: 0,
-            avoidOverlap: 0.2
-          },
-          enabled: true,
           hierarchicalRepulsion: {
-              centralGravity: 0.0,
-              springLength: 500,
-              springConstant: 0.01,
-              nodeDistance: 300,
-              damping: 0.09
+            enabled: true,
+            nodeDistance: 300,
+            centralGravity: 0.0,
+            springLength: 200,
+            springConstant: 0.01,
+            damping: 0.09
           },
           solver: 'hierarchicalRepulsion'
         },
         layout: {
           hierarchical: {
-            direction: "UD",
-            sortMethod: "directed",
-            nodeSpacing: 150,
-            treeSpacing: 100,
+            enabled: true,
+            levelSeparation: 350,
+            nodeSpacing: 350,
+            treeSpacing: 350,
+            blockShifting: true,
+            edgeMinimization: true,
+            parentCentralization: false,
+            direction: 'UD',        // UD, DU, LR, RL
+            sortMethod: 'directed'   // hubsize, directed
           }
         }
       }
