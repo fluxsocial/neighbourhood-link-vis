@@ -72,22 +72,51 @@ export default {
       if (this.nodes.filter(node => node.id === perspective.sharedUrl).length == 0) this.nodes.push(perspectiveNode);
       this.nodes.push(neighbourhoodLanugageNode);
     },
-    loadMetaLinks(perspective) {
-      const neighbourhoodMetaLinks = perspective.neighbourhood.meta.links;
-      const metaLinkNode = uuidv4();
-      const metaLinks = {
-        id: metaLinkNode,
+    loadMetaNode(perspective) {
+      const metaLinksId = uuidv4();
+      const metaLinksNode = {
+        id: metaLinksId,
         label: "metaLinks",
         shape: 'database',
         group: "metaLinks",
         widthConstraint: 100
       }
-      this.nodes.push(metaLinks);
+      this.nodes.push(metaLinksNode);
       this.edges.push({
         from: perspective.sharedUrl,
-        to: metaLinkNode,
+        to: metaLinksNode.id,
         label: "metaLinks"
       })
+      return metaLinksNode
+    },
+    loadLinkLanguageNode(perspective, isNeighbourhood) {
+      if (isNeighbourhood) {
+        const linkLanguageLinksNode = {
+          id: uuidv4(),
+          label: "linkLanguageLinks",
+          shape: 'database',
+          group: "linkLanguageLink",
+          widthConstraint: 100
+        }
+        this.nodes.push(linkLanguageLinksNode);
+        this.edges.push({
+          from: perspective.sharedUrl,
+          to: linkLanguageLinksNode.id,
+          label: "linkLanguageLinks"
+        })
+        this.edges.push({
+          from: linkLanguageLinksNode.id,
+          to: perspective.neighbourhood.linkLanguage,
+          label: "usesLanguage"
+        })
+        return linkLanguageLinksNode
+      } else {
+        return undefined
+      }
+    },
+    loadMetaLinks(perspective) {
+      const neighbourhoodMetaLinks = perspective.neighbourhood.meta.links;
+      const metaLinkNode = this.loadMetaNode(perspective);
       //Add the meta links to the network
       for (const metaLink of neighbourhoodMetaLinks) {
         const link = metaLink.data;
@@ -99,7 +128,7 @@ export default {
           group: "metaLinks"
         })
         this.edges.push({
-          from: metaLinkNode,
+          from: metaLinkNode.id,
           to: sourceId,
           label: "containsLink"
         })
@@ -121,20 +150,7 @@ export default {
     },
     loadConnectedMetaLinks(perspective) {
       const neighbourhoodMetaLinks = perspective.neighbourhood.meta.links;
-      const metaLinksId = uuidv4();
-      const metaLinksNode = {
-        id: metaLinksId,
-        label: "metaLinks",
-        shape: 'database',
-        group: "metaLinks",
-        widthConstraint: 100
-      }
-      this.nodes.push(metaLinksNode);
-      this.edges.push({
-        from: perspective.sharedUrl,
-        to: metaLinksNode.id,
-        label: "metaLinks"
-      })
+      const metaLinkNode = this.loadMetaNode(perspective);
       //Add the meta links to the network
       for (const metaLink of neighbourhoodMetaLinks) {
         const link = metaLink.data;
@@ -156,7 +172,7 @@ export default {
         if (this.nodes.filter(node => node.id == targetNode.id).length == 0) this.nodes.push(targetNode)
         if (inferredConnections.length == 0) {
           this.edges.push({
-            from: metaLinksNode.id,
+            from: metaLinkNode.id,
             to: sourceNode.id,
             label: "containsLink"
           })
@@ -169,33 +185,12 @@ export default {
       }
     },
     async loadConnectedLinks(perspective, isNeighbourhood) {
-      //Now start to look for the actual links on the link language
-      const linkLanguageLinksNode = uuidv4(); 
-      if (isNeighbourhood) {
-        const linkLanguageLinks = {
-          id: linkLanguageLinksNode,
-          label: "linkLanguageLinks",
-          shape: 'database',
-          group: "linkLanguageLink",
-          widthConstraint: 100
-        }
-        this.nodes.push(linkLanguageLinks);
-        this.edges.push({
-          from: perspective.sharedUrl,
-          to: linkLanguageLinksNode,
-          label: "linkLanguageLinks"
-        })
-        this.edges.push({
-          from: linkLanguageLinksNode,
-          to: perspective.neighbourhood.linkLanguage,
-          label: "usesLanguage"
-        })
-      }
+      const linkLanguageLinksNode = this.loadLinkLanguageNode(perspective, isNeighbourhood);
       const links = await ad4mClient.perspective.queryLinks(perspective.uuid, {});
       
       let from;
       if (isNeighbourhood) {
-        from = linkLanguageLinksNode
+        from = linkLanguageLinksNode.id
       } else {
         from = perspective.uuid;
       }
@@ -228,11 +223,6 @@ export default {
             group: "linkLanguageLink"
           }
         }
-        const edge = {
-          from: sourceNode.id,
-          to: targetNode.id,
-          label: linkData.predicate,
-        }
         if (this.nodes.filter(node => node.id == sourceNode.id).length == 0) this.nodes.push(sourceNode)
         if (this.nodes.filter(node => node.id == targetNode.id).length == 0) this.nodes.push(targetNode)
         if (inferredConnections.length == 0) {
@@ -242,56 +232,35 @@ export default {
             label: "containsLink"
           })
         }
-        this.edges.push(edge)
+        this.edges.push({
+          from: sourceNode.id,
+          to: targetNode.id,
+          label: linkData.predicate,
+        })
       }
     },
     async loadLinks(perspective, isNeighbourhood) {
-      //Now start to look for the actual links on the link language
-      const linkLanguageLinksNode = uuidv4(); 
-      if (isNeighbourhood) {
-        const linkLanguageLinks = {
-          id: linkLanguageLinksNode,
-          label: "linkLanguageLinks",
-          shape: 'database',
-          group: "linkLanguageLink",
-          widthConstraint: 100
-        }
-        this.nodes.push(linkLanguageLinks);
-        this.edges.push({
-          from: perspective.sharedUrl,
-          to: linkLanguageLinksNode,
-          label: "linkLanguageLinks"
-        })
-        this.edges.push({
-          from: linkLanguageLinksNode,
-          to: perspective.neighbourhood.linkLanguage,
-          label: "usesLanguage"
-        })
-      }
+      const linkLanguageLinksNode = this.loadLinkLanguageNode(perspective, isNeighbourhood);
       const links = await ad4mClient.perspective.queryLinks(perspective.uuid, {});
       
       let from;
       if (isNeighbourhood) {
-        from = linkLanguageLinksNode
+        from = linkLanguageLinksNode.id
       } else {
         from = perspective.uuid;
       }
 
       for (const link of links) {
         const linkData = link.data;
-        const sourceId = uuidv4();
-        let targetId = uuidv4();
         const sourceNode = {
-          id: sourceId,
+          id: uuidv4(),
           label: linkData.source,
           widthConstraint: 150,
           group: "linkLanguageLink",
           isSource: true
         }
         let targetNode;
-        let edge;
         if (linkData.target.includes("neighbourhood://")) {
-          targetId = linkData.target;
           targetNode = {
             id: linkData.target,
             label: linkData.target,
@@ -302,25 +271,24 @@ export default {
           }
         } else {
           targetNode = {
-            id: targetId,
+            id: uuidv4(),
             label: linkData.target,
             widthConstraint: 150,
             group: "linkLanguageLink"
           }
         }
-        edge = {
-          from: sourceId,
-          to: targetId,
-          label: linkData.predicate,
-        }
         this.nodes.push(sourceNode)
         this.nodes.push(targetNode)
         this.edges.push({
           from: from,
-          to: sourceId,
+          to: sourceNode.id,
           label: "containsLink"
         })
-        this.edges.push(edge)
+        this.edges.push({
+          from: sourceNode.id,
+          to: targetNode.id,
+          label: linkData.predicate,
+        })
       }
     },
     async getPerspectiveNodesAndMetaEdges() {
