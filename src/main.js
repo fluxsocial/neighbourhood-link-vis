@@ -2,12 +2,14 @@ import Vue from 'vue'
 import App from './App.vue'
 
 import { Network } from "vue-vis-network";
+import Notifications from 'vue-notification'
 import { ApolloClient, InMemoryCache } from "@apollo/client";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { Ad4mClient } from '@perspect3vism/ad4m';
 
 Vue.component('network', Network);
 Vue.config.productionTip = false
+Vue.use(Notifications)
 
 new Vue({
   render: h => h(App),
